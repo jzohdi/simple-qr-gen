@@ -84,7 +84,6 @@ const Home: NextPage = () => {
               <Image
                 src={qrCodeImage}
                 alt="qr code image"
-                layout="fixed"
                 width={320}
                 height={320}
               ></Image>
