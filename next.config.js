@@ -15,6 +15,8 @@ const securityHeaders = [
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Don't let `next dev` write an AGENTS.md into the repo when it detects an AI coding agent.
+  agentRules: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }]
   },
