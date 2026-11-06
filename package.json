@@ -36,6 +36,9 @@
   "engines": {
     "node": "24.x"
   },
+  "overrides": {
+    "minimatch@>=10 <11": "11.0.1"
+  },
   "allowScripts": {
     "unrs-resolver": false
   }
