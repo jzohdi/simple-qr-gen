@@ -1,5 +1,6 @@
 // Behavior smoke test for the QR code generator: checks B1–B9.
-// B8 (no page errors, no 4xx/5xx responses, no console errors from this site) runs after every test.
+// B8 (no page errors, and no 4xx/5xx responses or console errors from this site's origin) runs after
+// every test. Other origins don't count, so e.g. the Vercel toolbar on a preview can't trip it.
 // B4 and B9 are pre-existing bugs, marked test.fail(): the suite stays green while they fail and
 // goes red once one passes, which is the cue to drop its test.fail().
 import { test as base, expect, type Locator, type Page } from "@playwright/test";
@@ -12,19 +13,23 @@ const test = base.extend<{ siteErrors: string[] }>({
   siteErrors: [
     async ({ page, baseURL }, runTest) => {
       const origin = new URL(baseURL!).origin;
+      const isOwnOrigin = (url: string) => URL.canParse(url) && new URL(url).origin === origin;
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(`page error: ${error.message}`));
       page.on("response", (response) => {
-        if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`);
+        if (response.status() >= 400 && isOwnOrigin(response.url())) {
+          errors.push(`${response.status()} ${response.url()}`);
+        }
       });
       page.on("console", (message) => {
         const url = message.location().url;
-        if (message.type() === "error" && (!url || url.startsWith(origin))) {
+        // A console error with no source location is counted as the site's own.
+        if (message.type() === "error" && (!url || isOwnOrigin(url))) {
           errors.push(`console error: ${message.text()}`);
         }
       });
       await runTest(errors);
-      expect(errors, "B8: no page errors, 4xx/5xx responses or own-origin console errors").toEqual([]);
+      expect(errors, "B8: no page errors, own-origin 4xx/5xx responses or own-origin console errors").toEqual([]);
     },
     { auto: true },
   ],
