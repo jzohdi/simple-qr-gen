@@ -1,4 +1,4 @@
-// Behavior smoke test for the QR code generator: checks B1–B9.
+// Behavior smoke test for the QR code generator: checks B1–B9 and the security header baseline.
 // B8 (no page errors, and no 4xx/5xx responses or console errors from this site's origin) runs after
 // every test. Other origins don't count, so e.g. the Vercel toolbar on a preview can't trip it.
 // B4 and B9 are pre-existing bugs, marked test.fail(): the suite stays green while they fail and
@@ -132,6 +132,20 @@ test("B7 the server-rendered HTML already has the styles and the input", async (
   const html = await response.text();
   expect(html).toMatch(/data-emotion|<style[^>]*mantine/);
   expect(html).toContain("QR Code Data");
+});
+
+test("the response has the baseline security headers and no X-Powered-By", async ({ request }) => {
+  const response = await request.get("/");
+  expect(response.status()).toBe(200);
+  const headers = response.headers(); // names are lower-cased
+  expect(headers).toMatchObject({
+    "x-content-type-options": "nosniff",
+    "referrer-policy": "strict-origin-when-cross-origin",
+    "permissions-policy": "camera=(), microphone=(), geolocation=()",
+    "content-security-policy":
+      "frame-ancestors 'self' https://jakezohdi.dev https://studio-zohdi-llc.com https://www.studio-zohdi-llc.com",
+  });
+  expect(headers).not.toHaveProperty("x-powered-by");
 });
 
 // Pre-existing bug: pages/index.tsx skips QR generation for "" and never clears the previous image,
